@@ -12,7 +12,6 @@ export default function Home() {
   const [note, setNote] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [authLoading, setAuthLoading] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [passwordInput, setPasswordInput] = useState('')
   const [accessPassword, setAccessPassword] = useState('')
@@ -25,7 +24,6 @@ export default function Home() {
       setAccessPassword(savedToken)
       setAuthed(true)
     }
-    setAuthLoading(false)
   }, [])
 
   useEffect(() => {
@@ -119,10 +117,6 @@ export default function Home() {
     西红柿炒鸡蛋: '🍅🥚',
   }
   const categoryEmoji = { 肉菜: '🥩', 素菜: '🥬', 主食: '🍚', 水果: '🍎', 糖水: '🍮' }
-
-  if (authLoading) {
-    return <div className="min-h-screen bg-bg-warm" />
-  }
 
   if (!authed) {
     return (
