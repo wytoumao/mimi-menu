@@ -66,13 +66,26 @@ export default function Home() {
     sectionRefs.current[cat]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  // emoji map for food items
+  const foodEmoji = {
+    '泡椒牛肉': '🌶️🥩',
+    '酸辣土豆片': '🥔',
+    '西红柿炒鸡蛋': '🍅🥚',
+  }
+  const categoryEmoji = { '肉菜': '🥩', '素菜': '🥬', '主食': '🍚', '水果': '🍎', '糖水': '🍮' }
+
   return (
     <div className="max-w-lg mx-auto min-h-screen flex flex-col bg-bg-warm">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary-light p-4 text-white text-center rounded-b-2xl shadow-lg">
-        <div className="text-3xl mb-1">🐱</div>
-        <h1 className="text-xl font-bold">咪咪家庭菜单</h1>
-        <p className="text-xs opacity-80 mt-1">新鲜现做 · 用心烹饪 · 咪咪币结算</p>
+      {/* Banner */}
+      <div className="relative h-32 bg-gradient-to-br from-orange-400 via-amber-300 to-yellow-200 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center gap-3 text-4xl opacity-30 select-none">
+          <span>🍜</span><span>🥘</span><span>🍳</span><span>🥗</span><span>🍲</span><span>🧆</span><span>🥟</span><span>🍱</span>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+        <div className="absolute bottom-3 left-4 text-white">
+          <h1 className="text-xl font-bold drop-shadow">🐱 咪咪家庭菜单</h1>
+          <p className="text-xs opacity-90 mt-0.5">新鲜现做 · 用心烹饪 · 咪咪币结算</p>
+        </div>
       </div>
 
       {/* Body: categories + items */}
@@ -103,10 +116,15 @@ export default function Home() {
               <div key={cat} ref={el => sectionRefs.current[cat] = el}>
                 <h2 className="text-sm font-bold text-gray-700 py-2 sticky top-0 bg-bg-warm z-10">{cat}</h2>
                 {catItems.map(item => (
-                  <div key={item.id} className="bg-white rounded-xl p-3 mb-2 flex gap-3 shadow-sm">
-                    {/* Placeholder image */}
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-2xl shrink-0">
-                      {item.category === '肉菜' ? '🥩' : item.category === '素菜' ? '🥬' : item.category === '主食' ? '🍚' : item.category === '水果' ? '🍎' : '🍮'}
+                  <div key={item.id} className="bg-white rounded-xl p-2.5 mb-1.5 flex gap-3 shadow-sm">
+                    {/* Food image */}
+                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center shrink-0 overflow-hidden">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
+                      ) : null}
+                      <span className={`text-3xl ${item.image ? 'hidden' : 'flex'} items-center justify-center`}>
+                        {foodEmoji[item.name] || categoryEmoji[item.category] || '🍽️'}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-sm text-gray-800">{item.name}</h3>
@@ -133,21 +151,23 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Bottom cart bar */}
-      {totalQty > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-gray-800 text-white rounded-t-2xl p-3 flex items-center justify-between shadow-2xl z-50">
-          <div onClick={() => setShowCart(!showCart)} className="flex items-center gap-2 cursor-pointer">
-            <div className="relative">
-              <span className="text-2xl">🛒</span>
-              <span className="absolute -top-1 -right-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{totalQty}</span>
-            </div>
-            <span className="font-bold text-lg ml-2">{totalPrice} 🐱</span>
+      {/* Bottom cart bar - always visible */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-t-2xl p-3 flex items-center justify-between shadow-2xl z-50">
+        <div onClick={() => totalQty > 0 && setShowCart(!showCart)} className="flex items-center gap-2 cursor-pointer">
+          <div className="relative">
+            <span className="text-2xl">🛒</span>
+            {totalQty > 0 && <span className="absolute -top-1 -right-2 bg-white text-orange-500 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{totalQty}</span>}
           </div>
-          <button onClick={() => setShowOrder(true)} className="bg-primary px-6 py-2 rounded-full font-bold text-sm">
-            去下单
-          </button>
+          <span className="font-bold text-lg ml-2">{totalQty > 0 ? `${totalPrice} 🐱` : '还没选菜哦~'}</span>
         </div>
-      )}
+        <button
+          onClick={() => totalQty > 0 && setShowOrder(true)}
+          disabled={totalQty === 0}
+          className={`px-6 py-2 rounded-full font-bold text-sm ${totalQty > 0 ? 'bg-white text-orange-500' : 'bg-white/30 text-white/60 cursor-not-allowed'}`}
+        >
+          去下单
+        </button>
+      </div>
 
       {/* Cart detail popup */}
       {showCart && totalQty > 0 && (
