@@ -1,17 +1,49 @@
 import { NextResponse } from 'next/server'
 import { addOrder, getMenu, getOrders, setMenu } from '../../../lib/store'
+import { getClientIp, getRequestPassword, verifyAccessPassword, verifyAdminPassword } from '../../../lib/auth'
+
+const WINDOW_MS = 60 * 1000
+const MAX_ORDERS_PER_WINDOW = 3
+
+const rateLimitStore = globalThis.__mimiRateLimitStore || new Map()
+globalThis.__mimiRateLimitStore = rateLimitStore
+
+function checkOrderRateLimit(ip) {
+  const now = Date.now()
+  const history = rateLimitStore.get(ip) || []
+  const recent = history.filter((time) => now - time < WINDOW_MS)
+
+  if (recent.length >= MAX_ORDERS_PER_WINDOW) {
+    return false
+  }
+
+  recent.push(now)
+  rateLimitStore.set(ip, recent)
+  return true
+}
 
 export async function GET(req) {
-  const { searchParams } = new URL(req.url)
-  const password = searchParams.get('password')
-  if (password !== process.env.ADMIN_PASSWORD) {
+  const password = getRequestPassword(req)
+  if (!verifyAdminPassword(password)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   return NextResponse.json(await getOrders())
 }
 
 export async function POST(req) {
-  const { items, note } = await req.json()
+  const body = await req.json()
+  const password = getRequestPassword(req, body)
+
+  if (!verifyAccessPassword(password)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const ip = getClientIp(req)
+  if (!checkOrderRateLimit(ip)) {
+    return NextResponse.json({ error: 'Too many orders, 请稍后再试~' }, { status: 429 })
+  }
+
+  const { items, note } = body
   if (!items || items.length === 0) {
     return NextResponse.json({ error: 'Empty order' }, { status: 400 })
   }

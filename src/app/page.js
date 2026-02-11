@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 
+const ACCESS_KEY = 'mimi-access-token'
+
 export default function Home() {
   const [menu, setMenu] = useState({ categories: [], items: [] })
   const [cart, setCart] = useState({})
@@ -10,27 +12,68 @@ export default function Home() {
   const [note, setNote] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authed, setAuthed] = useState(false)
+  const [passwordInput, setPasswordInput] = useState('')
+  const [accessPassword, setAccessPassword] = useState('')
+  const [authError, setAuthError] = useState('')
   const sectionRefs = useRef({})
 
   useEffect(() => {
-    fetch('/api/menu').then(r => r.json()).then(data => {
-      setMenu(data)
-      if (data.categories.length) setActiveCategory(data.categories[0])
-    })
+    const savedToken = localStorage.getItem(ACCESS_KEY)
+    if (savedToken) {
+      setAccessPassword(savedToken)
+      setAuthed(true)
+    }
+    setAuthLoading(false)
   }, [])
 
-  const addToCart = (id) => setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }))
-  const removeFromCart = (id) => setCart(c => {
-    const n = { ...c }
-    if (n[id] > 1) n[id]--
-    else delete n[id]
-    return n
-  })
+  useEffect(() => {
+    if (!authed || !accessPassword) return
+    fetch('/api/menu', { headers: { 'x-access-password': accessPassword } })
+      .then((r) => r.json())
+      .then((data) => {
+        setMenu(data)
+        if (data.categories.length) setActiveCategory(data.categories[0])
+      })
+  }, [authed, accessPassword])
 
-  const cartItems = Object.entries(cart).map(([id, qty]) => {
-    const item = menu.items.find(i => i.id === id)
-    return item ? { ...item, qty } : null
-  }).filter(Boolean)
+  const handleLogin = async () => {
+    setAuthError('')
+    const password = passwordInput.trim()
+    if (!password) return
+
+    const res = await fetch('/api/access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-access-password': password },
+      body: JSON.stringify({ accessPassword: password }),
+    })
+
+    if (!res.ok) {
+      setAuthError('密码不对哦~')
+      return
+    }
+
+    localStorage.setItem(ACCESS_KEY, password)
+    setAccessPassword(password)
+    setAuthed(true)
+  }
+
+  const addToCart = (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }))
+  const removeFromCart = (id) =>
+    setCart((c) => {
+      const n = { ...c }
+      if (n[id] > 1) n[id]--
+      else delete n[id]
+      return n
+    })
+
+  const cartItems = Object.entries(cart)
+    .map(([id, qty]) => {
+      const item = menu.items.find((i) => i.id === id)
+      return item ? { ...item, qty } : null
+    })
+    .filter(Boolean)
 
   const totalPrice = cartItems.reduce((s, i) => s + i.price * i.qty, 0)
   const totalQty = cartItems.reduce((s, i) => s + i.qty, 0)
@@ -40,11 +83,15 @@ export default function Home() {
     try {
       const res = await fetch('/api/order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-access-password': accessPassword,
+        },
         body: JSON.stringify({
           items: Object.entries(cart).map(([id, qty]) => ({ id, qty })),
-          note
-        })
+          note,
+          accessPassword,
+        }),
       })
       if (res.ok) {
         setOrderSuccess(true)
@@ -66,17 +113,48 @@ export default function Home() {
     sectionRefs.current[cat]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // emoji map for food items
   const foodEmoji = {
-    '泡椒牛肉': '🌶️🥩',
-    '酸辣土豆片': '🥔',
-    '西红柿炒鸡蛋': '🍅🥚',
+    泡椒牛肉: '🌶️🥩',
+    酸辣土豆片: '🥔',
+    西红柿炒鸡蛋: '🍅🥚',
   }
-  const categoryEmoji = { '肉菜': '🥩', '素菜': '🥬', '主食': '🍚', '水果': '🍎', '糖水': '🍮' }
+  const categoryEmoji = { 肉菜: '🥩', 素菜: '🥬', 主食: '🍚', 水果: '🍎', 糖水: '🍮' }
+
+  if (authLoading) {
+    return <div className="min-h-screen bg-bg-warm" />
+  }
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-bg-warm flex items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white/90 backdrop-blur rounded-3xl p-8 shadow-xl border border-orange-100">
+          <div className="text-center">
+            <div className="text-6xl mb-2">🐱</div>
+            <h1 className="text-2xl font-bold text-gray-800">咪咪家庭菜单</h1>
+            <p className="text-sm text-orange-500 mt-1">输入密码，开始点餐吧～</p>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="请输入访问密码"
+              className="w-full p-3 rounded-xl border border-orange-200 focus:outline-none focus:border-primary"
+              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+            />
+            {authError && <p className="text-sm text-red-500">{authError}</p>}
+            <button onClick={handleLogin} className="w-full bg-primary text-white py-3 rounded-xl font-bold">
+              进入
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-lg mx-auto min-h-screen flex flex-col bg-bg-warm">
-      {/* Banner */}
       <div className="relative h-32 bg-gradient-to-br from-orange-400 via-amber-300 to-yellow-200 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center gap-3 text-4xl opacity-30 select-none">
           <span>🍜</span><span>🥘</span><span>🍳</span><span>🥗</span><span>🍲</span><span>🧆</span><span>🥟</span><span>🍱</span>
@@ -88,11 +166,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Body: categories + items */}
       <div className="flex flex-1 overflow-hidden mt-2">
-        {/* Left categories */}
         <div className="w-20 shrink-0 bg-white rounded-tr-xl overflow-y-auto hide-scrollbar">
-          {menu.categories.map(cat => (
+          {menu.categories.map((cat) => (
             <button
               key={cat}
               onClick={() => scrollToCategory(cat)}
@@ -107,20 +183,18 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Right items */}
         <div className="flex-1 overflow-y-auto px-3 pb-24 hide-scrollbar">
-          {menu.categories.map(cat => {
-            const catItems = menu.items.filter(i => i.category === cat && i.available)
+          {menu.categories.map((cat) => {
+            const catItems = menu.items.filter((i) => i.category === cat && i.available)
             if (!catItems.length) return null
             return (
-              <div key={cat} ref={el => sectionRefs.current[cat] = el}>
+              <div key={cat} ref={(el) => (sectionRefs.current[cat] = el)}>
                 <h2 className="text-sm font-bold text-gray-700 py-2 sticky top-0 bg-bg-warm z-10">{cat}</h2>
-                {catItems.map(item => (
+                {catItems.map((item) => (
                   <div key={item.id} className="bg-white rounded-xl p-2.5 mb-1.5 flex gap-3 shadow-sm">
-                    {/* Food image */}
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center shrink-0 overflow-hidden">
                       {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
                       ) : null}
                       <span className={`text-3xl ${item.image ? 'hidden' : 'flex'} items-center justify-center`}>
                         {foodEmoji[item.name] || categoryEmoji[item.category] || '🍽️'}
@@ -151,7 +225,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Bottom cart bar - always visible */}
       <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-t-2xl p-3 flex items-center justify-between shadow-2xl z-50">
         <div onClick={() => totalQty > 0 && setShowCart(!showCart)} className="flex items-center gap-2 cursor-pointer">
           <div className="relative">
@@ -169,16 +242,15 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Cart detail popup */}
       {showCart && totalQty > 0 && (
         <div className="fixed inset-0 z-40" onClick={() => setShowCart(false)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute bottom-16 left-0 right-0 max-w-lg mx-auto bg-white rounded-t-2xl p-4 max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="absolute bottom-16 left-0 right-0 max-w-lg mx-auto bg-white rounded-t-2xl p-4 max-h-[50vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-800">已选菜品</h3>
               <button onClick={() => { setCart({}); setShowCart(false) }} className="text-xs text-gray-400">清空</button>
             </div>
-            {cartItems.map(item => (
+            {cartItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between py-2 border-b border-gray-100">
                 <div>
                   <span className="text-sm font-medium">{item.name}</span>
@@ -195,11 +267,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* Order confirmation modal */}
       {showOrder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => !submitting && setShowOrder(false)}>
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative w-full max-w-lg bg-white rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-lg bg-white rounded-t-2xl p-5" onClick={(e) => e.stopPropagation()}>
             {orderSuccess ? (
               <div className="text-center py-8">
                 <div className="text-5xl mb-3">🎉</div>
@@ -209,7 +280,7 @@ export default function Home() {
             ) : (
               <>
                 <h3 className="font-bold text-lg text-gray-800 mb-3">确认订单</h3>
-                {cartItems.map(item => (
+                {cartItems.map((item) => (
                   <div key={item.id} className="flex justify-between py-1.5 text-sm">
                     <span>{item.name} x{item.qty}</span>
                     <span className="text-primary">{item.price * item.qty} 🐱</span>
@@ -221,7 +292,7 @@ export default function Home() {
                 </div>
                 <textarea
                   value={note}
-                  onChange={e => setNote(e.target.value)}
+                  onChange={(e) => setNote(e.target.value)}
                   placeholder="备注（如：少辣、多饭...）"
                   className="w-full mt-3 p-3 border border-gray-200 rounded-xl text-sm resize-none h-20 focus:outline-none focus:border-primary"
                 />

@@ -1,18 +1,21 @@
 import { NextResponse } from 'next/server'
 import { getMenu, setMenu } from '../../../lib/store'
+import { getRequestPassword, verifyAdminPassword } from '../../../lib/auth'
 
 export async function GET() {
   const menu = await getMenu()
   return NextResponse.json(menu)
 }
 
-export async function POST(req) {
-  const { action, item, password } = await req.json()
-  if (password !== process.env.ADMIN_PASSWORD) {
+async function mutateMenu(req, action, reqItem, parsedBody = null) {
+  const body = parsedBody || {}
+  const password = getRequestPassword(req, body)
+  if (!verifyAdminPassword(password)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const menu = await getMenu()
+  const item = reqItem || body.item
 
   if (action === 'add') {
     item.id = Date.now().toString()
@@ -28,4 +31,19 @@ export async function POST(req) {
 
   await setMenu(menu)
   return NextResponse.json({ ok: true })
+}
+
+export async function POST(req) {
+  const body = await req.json()
+  return mutateMenu(req, body.action, body.item, body)
+}
+
+export async function PUT(req) {
+  const body = await req.json()
+  return mutateMenu(req, 'update', body.item, body)
+}
+
+export async function DELETE(req) {
+  const body = await req.json().catch(() => ({}))
+  return mutateMenu(req, 'delete', body.item, body)
 }
