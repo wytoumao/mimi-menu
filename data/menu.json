@@ -1,0 +1,35 @@
+{
+  "categories": ["肉菜", "素菜", "主食", "水果", "糖水"],
+  "items": [
+    {
+      "id": "1",
+      "name": "泡椒牛肉",
+      "category": "肉菜",
+      "price": 15,
+      "description": "鲜嫩牛肉配泡椒，麻辣鲜香",
+      "image": "",
+      "sales": 128,
+      "available": true
+    },
+    {
+      "id": "2",
+      "name": "酸辣土豆片",
+      "category": "素菜",
+      "price": 8,
+      "description": "薄切土豆片，酸辣爽口",
+      "image": "",
+      "sales": 256,
+      "available": true
+    },
+    {
+      "id": "3",
+      "name": "西红柿炒鸡蛋",
+      "category": "素菜",
+      "price": 10,
+      "description": "经典家常菜，酸甜可口",
+      "image": "",
+      "sales": 199,
+      "available": true
+    }
+  ]
+}
