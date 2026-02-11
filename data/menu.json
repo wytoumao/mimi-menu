@@ -30,6 +30,26 @@
       "image": "",
       "sales": 199,
       "available": true
+    },
+    {
+      "id": "4",
+      "name": "米饭",
+      "category": "主食",
+      "price": 2,
+      "description": "香喷喷的白米饭",
+      "image": "",
+      "sales": 520,
+      "available": true
+    },
+    {
+      "id": "5",
+      "name": "面条",
+      "category": "主食",
+      "price": 5,
+      "description": "手工煮面，Q弹爽滑",
+      "image": "",
+      "sales": 388,
+      "available": true
     }
   ]
 }
