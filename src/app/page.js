@@ -115,8 +115,11 @@ export default function Home() {
     泡椒牛肉: '🌶️🥩',
     酸辣土豆片: '🥔',
     西红柿炒鸡蛋: '🍅🥚',
+    酸牛肉: '🍋🥩',
+    生牛肉: '🥩',
+    蘸酱黄瓜: '🥒',
   }
-  const categoryEmoji = { 肉菜: '🥩', 素菜: '🥬', 主食: '🍚', 水果: '🍎', 糖水: '🍮' }
+  const categoryEmoji = { 肉菜: '🥩', 凉菜: '🥗', 素菜: '🥬', 主食: '🍚', 水果: '🍎', 糖水: '🍮' }
 
   if (!authed) {
     return (

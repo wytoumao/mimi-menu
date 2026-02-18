@@ -1,5 +1,5 @@
 {
-  "categories": ["肉菜", "素菜", "主食", "水果", "糖水"],
+  "categories": ["肉菜", "凉菜", "素菜", "主食", "水果", "糖水"],
   "items": [
     {
       "id": "1",
@@ -49,6 +49,36 @@
       "description": "手工煮面，Q弹爽滑",
       "image": "",
       "sales": 388,
+      "available": true
+    },
+    {
+      "id": "6",
+      "name": "酸牛肉",
+      "category": "肉菜",
+      "price": 18,
+      "description": "酸香入味，牛肉嫩滑，开胃解腻",
+      "image": "",
+      "sales": 0,
+      "available": true
+    },
+    {
+      "id": "7",
+      "name": "生牛肉",
+      "category": "肉菜",
+      "price": 22,
+      "description": "新鲜牛肉薄切，蘸料提鲜，口感极嫩",
+      "image": "",
+      "sales": 0,
+      "available": true
+    },
+    {
+      "id": "8",
+      "name": "蘸酱黄瓜",
+      "category": "凉菜",
+      "price": 6,
+      "description": "清脆爽口，配自制酱料，消暑必备",
+      "image": "",
+      "sales": 0,
       "available": true
     }
   ]
